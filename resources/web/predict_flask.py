@@ -16,7 +16,7 @@ import predict_utils
 # Set up Flask, Mongo and Elasticsearch
 app = Flask(__name__)
 
-client = MongoClient()
+client = MongoClient(host=['192.168.0.13:27017'])
 
 from pyelasticsearch import ElasticSearch
 elastic = ElasticSearch(config.ELASTIC_URL)
@@ -598,8 +598,8 @@ def predict(message):
   print(request.sid)
   try:
     #Update Orion entity
-    url = 'http://localhost:1027/v2/entities/flight01/attrs'
-    headers = {"Content-Type": "application/json","Fiware-service":"closeiot7","Fiware-ServicePath":"/test"}
+    url = 'http://192.168.0.13:1027/v2/entities/ReqFlightPrediction1/attrs'
+    headers = {"Content-Type": "application/json"}
     x = requests.patch(url, data = message_bytes, headers = headers )
     emit('messages', {"type": "CONFIRMATION"}, room = request.sid)
     
