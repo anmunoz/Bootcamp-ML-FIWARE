@@ -1,7 +1,7 @@
 // Attach a submit handler to the form
 
 const {$} = window;
-let predictionId = Date.now();
+let predictionId = 434// Date.now();
 
 function getFormData($form){
     var unindexed_array = $form.serializeArray();
@@ -18,20 +18,18 @@ function getFormData($form){
 // [-float("inf"), -15.0, 0, 30.0, float("inf")]
 function renderPage(response) {
 
-  console.log(response);
-
   var displayMessage;
 
-  if(response.Prediction == 0 || response.Prediction == '0') {
+  if(response.DepDelay == 0 || response.DepDelay == '0') {
       displayMessage = "Early (15+ Minutes Early)";
     }
-    else if(response.Prediction == 1 || response.Prediction == '1') {
+    else if(response.DepDelay == 1 || response.DepDelay == '1') {
       displayMessage = "Slightly Early (0-15 Minute Early)";
     }
-    else if(response.Prediction == 2 || response.Prediction == '2') {
+    else if(response.DepDelay == 2 || response.DepDelay == '2') {
       displayMessage = "Slightly Late (0-30 Minute Delay)";
     }
-    else if(response.Prediction == 3 || response.Prediction == '3') {
+    else if(response.DepDelay == 3 || response.DepDelay == '3') {
       displayMessage = "Very Late (30+ Minutes Late)";
     }
     
@@ -54,12 +52,13 @@ $(function () {
       term = $form.find( "input[name='s']" ).val(),
       url = $form.attr( "action" );
 
-    socket.emit("predict", getFormData($form));
+    data = getFormData($form);
+    data.predictionId = predictionId;
+    socket.emit("predict", data);
 
     // $( "#result" ).empty().append( "Processing..." );
    
   });
-
 
   socket.on('messages', function(action) {
     try{
@@ -72,7 +71,7 @@ $(function () {
           break;
         case "PREDICTION":
           if (predictionId === (action.payload.predictionId)) {
-            renderPage(action.payload.Prediction);
+            renderPage(action.payload);
           }
           break;
         default:
@@ -83,6 +82,4 @@ $(function () {
     }
   });
 
-
-
-}
+});

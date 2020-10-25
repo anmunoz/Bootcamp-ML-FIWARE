@@ -131,9 +131,6 @@ def search_airplanes():
   nav_path = predict_utils.strip_place(request.url)
   nav_offsets = predict_utils.get_navigation_offsets(start, end, config.AIRPLANE_RECORDS_PER_PAGE)
 
-  print("nav_path: [{}]".format(nav_path))
-  print(json.dumps(nav_offsets))
-
   # Build the base of our elasticsearch query
   query = {
     'query': {
@@ -157,7 +154,6 @@ def search_airplanes():
   for item in search_config:
     field = item['field']
     value = request.args.get(field)
-    print(field, value)
     arg_dict[field] = value
     if value:
       query['query']['bool']['must'].append({'match': {field: value}})
@@ -450,130 +446,7 @@ def flight_delays_batch_results_page(iso_date):
     iso_date=iso_date
   )
 
-# Make our API a post, so a search engine wouldn't hit it
-@app.route("/flights/delays/predict/classify_realtime", methods=['POST'])
-def classify_flight_delays_realtime():
-  """POST API for classifying flight delays"""
-  
-  # Define the form fields to process
-  api_field_type_map = \
-    {
-      "DepDelay": float,
-      "Carrier": str,
-      "FlightDate": str,
-      "Dest": str,
-      "FlightNum": str,
-      "Origin": str
-    }
-
-  # Fetch the values for each field from the form object
-  api_form_values = {}
-  for api_field_name, api_field_type in api_field_type_map.items():
-    api_form_values[api_field_name] = request.form.get(api_field_name, type=api_field_type)
-  
-  # Set the direct values, which excludes Date
-  prediction_features = {}
-  for key, value in api_form_values.items():
-    prediction_features[key] = value
-  
-  # Set the derived values
-  prediction_features['Distance'] = predict_utils.get_flight_distance(
-    client, api_form_values['Origin'],
-    api_form_values['Dest']
-  )
-  
-  # Turn the date into DayOfYear, DayOfMonth, DayOfWeek
-  date_features_dict = predict_utils.get_regression_date_args(
-    api_form_values['FlightDate']
-  )
-  for api_field_name, api_field_value in date_features_dict.items():
-    prediction_features[api_field_name] = api_field_value
-  
-  # Add a timestamp
-  prediction_features['Timestamp'] = predict_utils.get_current_timestamp()
-  print (prediction_features['Timestamp'])
-  
-  # Create a unique ID for this message
-  unique_id = str(uuid.uuid4())
-  prediction_features['UUID'] = unique_id
-
-  json_entity = {"FlightNum": {
-            "type": "int",
-            "value": 1519,
-            "metadata": {}
-        },
-        "DepDelay": {
-            "type": "Double",
-            "value": prediction_features['DepDelay'],
-            "metadata": {}
-        },
-        "Carrier": {
-            "type": "String",
-            "value": prediction_features['Carrier'],
-            "metadata": {}
-        },
-        "FlightDate": {
-            "type": "Date",
-            "value": prediction_features['FlightDate'],
-            "metadata": {}
-        },
-        "Origin": {
-            "type": "String",
-            "value": prediction_features['Origin'],
-            "metadata": {}
-        },
-        "Dest": {
-            "type": "String",
-            "value": prediction_features['Dest'],
-            "metadata": {}
-        },
-        "Distance": {
-            "type": "double",
-            "value":prediction_features['Distance'],
-            "metadata": {}
-        },
-        "DayOfYear": {
-            "type": "int",
-            "value":prediction_features['DayOfYear'],
-            "metadata": {}
-        },
-        "DayOfMonth": {
-            "type": "int",
-            "value":prediction_features['DayOfMonth'],
-            "metadata": {}
-        },
-        "DayOfWeek": {
-            "type": "int",
-            "value":prediction_features['DayOfWeek'],
-            "metadata": {}
-        },
-        "Timestamp": {
-            "type": "String",
-            "value":prediction_features['Timestamp'],
-            "metadata": {}
-        },
-        "UUID": {
-            "type": "String",
-            "value":prediction_features['UUID'],
-            "metadata": {}
-        }
-      }
-  
-  message_bytes = json.dumps(json_entity).encode()
-
-  #Update Orion entity
-  url = 'http://localhost:1027/v2/entities/flight01/attrs'
-  headers = {"Content-Type": "application/json","Fiware-service":"closeiot7","Fiware-ServicePath":"/test"}
-  x = requests.patch(url, data = message_bytes, headers = headers )
-  print (message_bytes)
-  print(x.text+"respose")
-  
-  #producer.send(PREDICTION_TOPIC, message_bytes)
-
-  response = {"status": "OK", "id": unique_id}
-  return json_util.dumps(response)
-
-@app.route("/flights/delays/predict_kafka")
+@app.route("/flights/delays/predict_flights")
 def flight_delays_page_kafka():
   """Serves flight delay prediction page with polling form"""
   
@@ -585,15 +458,22 @@ def flight_delays_page_kafka():
     {'field': 'Dest', 'label': 'Destination', 'value': 'SFO'}
   ]
   
-  return render_template('flight_delays_predict_kafka.html', form_config=form_config)
+  return render_template('flight_delays_predict_flights.html', form_config=form_config)
 
  
-@app.route("/flights/delays/response")
+@app.route("/flights/delays/response", methods=['POST'])
 def predict_response():
-  prediction_response = request.json
-  if prediction_response and prediction_response.socketId:
-    emit('my response', {type: "PREDICTION", payload: prediction_response}, room = prediction_response.socketId)
-  return "ok"
+  message = request.json
+  prediction_response = {}
+  for key, value in message.items():
+    prediction_response[key] = value
+
+  try:
+    if prediction_response and prediction_response["socketId"]:
+      socketio.emit('messages', {"type": "PREDICTION", "payload": { "predictionId" : prediction_response["predictionId"], "DepDelay" : prediction_response["DepDelay"]}}, room = prediction_response["socketId"])
+    return "ok"
+  except:
+    abort(500)
 
 def shutdown_server():
   func = request.environ.get('werkzeug.server.shutdown')
@@ -646,11 +526,6 @@ def predict(message):
   
   # Add a timestamp
   prediction_features['Timestamp'] = predict_utils.get_current_timestamp()
-  print (prediction_features['Timestamp'])
-  
-  # Create a unique ID for this message
-  unique_id = str(uuid.uuid4())
-  prediction_features['UUID'] = unique_id
 
   json_entity = {"FlightNum": {
             "type": "int",
@@ -707,20 +582,28 @@ def predict(message):
             "value":prediction_features['Timestamp'],
             "metadata": {}
         },
-        "UUID": {
+        "predictionId": {
             "type": "String",
-            "value":prediction_features['UUID'],
+            "value":prediction_features['predictionId'],
+            "metadata": {}
+        },
+        "socketId": {
+            "type": "String",
+            "value": request.sid,
             "metadata": {}
         }
       }
-  
   message_bytes = json.dumps(json_entity).encode()
-
-  #Update Orion entity
-  url = 'http://localhost:1027/v2/entities/flight01/attrs'
-  headers = {"Content-Type": "application/json","Fiware-service":"closeiot7","Fiware-ServicePath":"/test"}
-  x = requests.patch(url, data = message_bytes, headers = headers )
-  emit('my response', {type: "CONFIRMATION"}, room = request.namespace.socket.sessid)
+  print(request.sid)
+  try:
+    #Update Orion entity
+    url = 'http://localhost:1027/v2/entities/flight01/attrs'
+    headers = {"Content-Type": "application/json","Fiware-service":"closeiot7","Fiware-ServicePath":"/test"}
+    x = requests.patch(url, data = message_bytes, headers = headers )
+    emit('messages', {"type": "CONFIRMATION"}, room = request.sid)
+    
+  except:
+    emit('messages', {"type": "ERROR"}, room = request.sid)
 
 if __name__ == "__main__":
     app.run(
