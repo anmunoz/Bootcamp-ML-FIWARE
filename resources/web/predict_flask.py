@@ -1,5 +1,7 @@
 import sys, os, re
 from flask import Flask, render_template, request
+from flask_socketio import SocketIO, emit
+
 from pymongo import MongoClient
 from bson import json_util
 import requests
@@ -24,12 +26,12 @@ import json
 # Date/time stuff
 import iso8601
 import datetime
-import socketio
 
-# Setup Kafka
-#from kafka import KafkaProducer
-#producer = KafkaProducer(bootstrap_servers=['localhost:9092'],api_version=(0,10))
-#PREDICTION_TOPIC = 'flight_delay_classification_request'
+
+    
+app.config['SECRET_KEY'] = 'secret!'
+socketio = SocketIO(app)
+ 
 
 import uuid
 
@@ -585,43 +587,13 @@ def flight_delays_page_kafka():
   
   return render_template('flight_delays_predict_kafka.html', form_config=form_config)
 
-@app.route("/flights/delays/predict/classify_realtime/response/<unique_id>")
-def classify_flight_delays_realtime_response(unique_id):
-  """Serves predictions to polling requestors"""
-  
-
-  sio = socketio.Client()
-
-  @sio.event
-  def connect():
-      print('connection established')
-
-  @sio.event
-  def my_message(data):
-      print('message received with ', data)
-      sio.emit('my response', {'response': 'my response'})
-
-  @sio.event
-  def disconnect():
-      print('disconnected from server')
-
-  sio.connect('http://localhost:5000')
-  sio.wait()
-
-  prediction = on_aaa_response["predictionValue.value"]
-
-  #client.agile_data_science.flight_delay_classification_response.find_one(
-   ## {
-   #   "UUID": unique_id
-   # }
-  #)
-  
-  response = {"status": "WAIT", "id": unique_id}
-  if prediction:
-    response["status"] = "OK"
-    response["prediction"] = prediction
-  
-  return json_util.dumps(response)
+ 
+@app.route("/flights/delays/response")
+def predict_response():
+  prediction_response = request.json
+  if prediction_response and prediction_response.socketId:
+    emit('my response', {type: "PREDICTION", payload: prediction_response}, room = prediction_response.socketId)
+  return "ok"
 
 def shutdown_server():
   func = request.environ.get('werkzeug.server.shutdown')
@@ -634,8 +606,127 @@ def shutdown():
   shutdown_server()
   return 'Server shutting down...'
 
+@socketio.on('predict')
+def predict(message):
+  """POST API for classifying flight delays"""
+  
+  # Define the form fields to process
+  api_field_type_map = \
+    {
+      "DepDelay": float,
+      "Carrier": str,
+      "FlightDate": str,
+      "Dest": str,
+      "FlightNum": str,
+      "Origin": str
+    }
+
+  # Fetch the values for each field from the form object
+  # api_form_values = {}
+  # for api_field_name, api_field_type in api_field_type_map.items():
+  #   api_form_values[api_field_name] = request.form.get(api_field_name, type=api_field_type)
+  
+  # Set the direct values, which excludes Date
+  prediction_features = {}
+  for key, value in message.items():
+    prediction_features[key] = value
+  
+  # Set the derived values
+  prediction_features['Distance'] = predict_utils.get_flight_distance(
+    client, message['Origin'],
+    message['Dest']
+  )
+  
+  # Turn the date into DayOfYear, DayOfMonth, DayOfWeek
+  date_features_dict = predict_utils.get_regression_date_args(
+    message['FlightDate']
+  )
+  for api_field_name, api_field_value in date_features_dict.items():
+    prediction_features[api_field_name] = api_field_value
+  
+  # Add a timestamp
+  prediction_features['Timestamp'] = predict_utils.get_current_timestamp()
+  print (prediction_features['Timestamp'])
+  
+  # Create a unique ID for this message
+  unique_id = str(uuid.uuid4())
+  prediction_features['UUID'] = unique_id
+
+  json_entity = {"FlightNum": {
+            "type": "int",
+            "value": 1519,
+            "metadata": {}
+        },
+        "DepDelay": {
+            "type": "Double",
+            "value": prediction_features['DepDelay'],
+            "metadata": {}
+        },
+        "Carrier": {
+            "type": "String",
+            "value": prediction_features['Carrier'],
+            "metadata": {}
+        },
+        "FlightDate": {
+            "type": "Date",
+            "value": prediction_features['FlightDate'],
+            "metadata": {}
+        },
+        "Origin": {
+            "type": "String",
+            "value": prediction_features['Origin'],
+            "metadata": {}
+        },
+        "Dest": {
+            "type": "String",
+            "value": prediction_features['Dest'],
+            "metadata": {}
+        },
+        "Distance": {
+            "type": "double",
+            "value":prediction_features['Distance'],
+            "metadata": {}
+        },
+        "DayOfYear": {
+            "type": "int",
+            "value":prediction_features['DayOfYear'],
+            "metadata": {}
+        },
+        "DayOfMonth": {
+            "type": "int",
+            "value":prediction_features['DayOfMonth'],
+            "metadata": {}
+        },
+        "DayOfWeek": {
+            "type": "int",
+            "value":prediction_features['DayOfWeek'],
+            "metadata": {}
+        },
+        "Timestamp": {
+            "type": "String",
+            "value":prediction_features['Timestamp'],
+            "metadata": {}
+        },
+        "UUID": {
+            "type": "String",
+            "value":prediction_features['UUID'],
+            "metadata": {}
+        }
+      }
+  
+  message_bytes = json.dumps(json_entity).encode()
+
+  #Update Orion entity
+  url = 'http://localhost:1027/v2/entities/flight01/attrs'
+  headers = {"Content-Type": "application/json","Fiware-service":"closeiot7","Fiware-ServicePath":"/test"}
+  x = requests.patch(url, data = message_bytes, headers = headers )
+  emit('my response', {type: "CONFIRMATION"}, room = request.namespace.socket.sessid)
+
 if __name__ == "__main__":
     app.run(
     debug=True,
     host='0.0.0.0'
   )
+    socketio.run(app)
+
+
