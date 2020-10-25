@@ -1,7 +1,7 @@
 // Attach a submit handler to the form
 
 const {$} = window;
-let predictionId = Date.now();
+let predictionId = Date.now().toString();
 
 function getFormData($form){
     var unindexed_array = $form.serializeArray();
@@ -52,6 +52,7 @@ $(function () {
       url = $form.attr( "action" );
 
     data = getFormData($form);
+    predictionId = Date.now().toString();
     data.predictionId = predictionId;
     socket.emit("predict", data);
 
@@ -69,7 +70,7 @@ $(function () {
           $( "#result" ).empty().append( "<span class='text-danger'>ERROR</span>" );
           break;
         case "PREDICTION":
-          if (predictionId === (action.payload.predictionId)) {
+          if (predictionId == (action.payload.predictionId)) {
             renderPage(action.payload.predictionValue);
           }
           break;

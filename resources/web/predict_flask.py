@@ -463,6 +463,7 @@ def flight_delays_page_kafka():
  
 @app.route("/flights/delays/response", methods=['POST'])
 def predict_response():
+  print ("hola")
   message = request.json
   prediction_response = {}
   for key, value in message.items():
