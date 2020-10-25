@@ -469,8 +469,9 @@ def predict_response():
     prediction_response[key] = value
 
   try:
-    if prediction_response and prediction_response["socketId"]:
-      socketio.emit('messages', {"type": "PREDICTION", "payload": { "predictionId" : prediction_response["predictionId"], "DepDelay" : prediction_response["DepDelay"]}}, room = prediction_response["socketId"])
+    if prediction_response and prediction_response["data"] and prediction_response["data"][0] and prediction_response["data"][0]["socketId"]:
+      data = prediction_response["data"][0]
+      socketio.emit('messages', {"type": "PREDICTION", "payload": { "predictionId" : data["predictionId"]["value"], "predictionValue" : data["predictionValue"]["value"]}}, room = data["socketId"]["value"])
     return "ok"
   except:
     abort(500)

@@ -16,20 +16,20 @@ function getFormData($form){
 
 // Render the response on the page for splits:
 // [-float("inf"), -15.0, 0, 30.0, float("inf")]
-function renderPage(response) {
+function renderPage(result) {
 
   var displayMessage;
 
-  if(response.DepDelay == 0 || response.DepDelay == '0') {
+  if(result == 0 || result == '0') {
       displayMessage = "<span class='text-success'>Early (15+ Minutes Early)</span>";
     }
-    else if(response.DepDelay == 1 || response.DepDelay == '1') {
+    else if(result == 1 || result == '1') {
       displayMessage = "<span class='text-success'>Slightly Early (0-15 Minute Early)</span>";
     }
-    else if(response.DepDelay == 2 || response.DepDelay == '2') {
+    else if(result == 2 || result == '2') {
       displayMessage = "<span class='text-warning'>Slightly Late (0-30 Minute Delay)</span>";
     }
-    else if(response.DepDelay == 3 || response.DepDelay == '3') {
+    else if(result == 3 || result == '3') {
       displayMessage = "<span class='text-danger'>Very Late (30+ Minutes Late)</span>";
     }
     
@@ -70,7 +70,7 @@ $(function () {
           break;
         case "PREDICTION":
           if (predictionId === (action.payload.predictionId)) {
-            renderPage(action.payload);
+            renderPage(action.payload.predictionValue);
           }
           break;
         default:
