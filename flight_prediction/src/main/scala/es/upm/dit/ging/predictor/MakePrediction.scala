@@ -47,14 +47,13 @@ object MakePrediction {
       base_path)
     val rfc = RandomForestClassificationModel.load(randomForestModelPath)
 
-    val ssc = new StreamingContext(spark.sparkContext, Seconds(10))
+    val ssc = new StreamingContext(spark.sparkContext, Seconds(5))
 
     val eventStream = ssc.receiverStream(new OrionReceiver(9001))
     val processedDataStream = eventStream
       .flatMap(event => event.entities)
       .map(ent => {println(ent)
         val origin = ent.attrs("Origin").value.toString
-        println(origin+"kkkkkkkkkkkkkkkkkkk")
         val flightNumber = ent.attrs("FlightNum").value.toString
         val dayOfWeek = ent.attrs("DayOfWeek").value.toString.toInt
         val dayOfYear = ent.attrs("DayOfYear").value.toString.toInt
@@ -66,22 +65,18 @@ object MakePrediction {
         val carrier = ent.attrs("Carrier").value.toString
         val uuid = ent.attrs("UUID").value.toString
         val distance = ent.attrs("Distance").value.toString.toDouble
+        val socketId = ent.attrs("socketId").value.toString
 
         PredictionRequest(origin, flightNumber, dayOfWeek, dayOfYear, dayOfMonth, dest, depDelay,"",timestamp,flightDate,carrier,
-        uuid,distance,0,0,0,0)
+        uuid,distance,0,0,0,0,socketId)
       })
-
-    val aliases= Seq("Origin","FlightNum","DayOfWeek","DayOfYear"
-      ,"DayOfMonth","Dest","DepDelay","Prediction","Timestamp"
-      ,"FlightDate","Carrier","UUID","Distance","Carrier_index"
-      ,"Origin_index","Dest_index","Route_index")
 
     val predictionDataStream = processedDataStream
       .transform(rdd => {
           val df = rdd.toDF("Origin","FlightNum","DayOfWeek","DayOfYear"
             ,"DayOfMonth","Dest","DepDelay","Prediction","Timestamp"
             ,"FlightDate","Carrier","UUID","Distance","Carrier_index"
-            ,"Origin_index","Dest_index","Route_index")
+            ,"Origin_index","Dest_index","Route_index","socketId")
           df.printSchema()
           df.show()
 
@@ -109,7 +104,7 @@ object MakePrediction {
              "DepDelay","Timestamp","FlightDate",
              "Carrier","UUID","Distance",
              "cast('Carrier_index' as double) Carrier_index" ,"cast('Origin_index' as double) Origin_index",
-             "cast('Dest_index' as double) Dest_index","cast('Route_index' as double) Route_index")
+             "cast('Dest_index' as double) Dest_index","cast('Route_index' as double) Route_index","socketId")
 
            val predictionRequestsWithRouteMod2 = flightFlattenedDf2.withColumn(
              "Route",
@@ -143,7 +138,10 @@ object MakePrediction {
               .drop("Features_vec")
 
             // Drop the features vector and prediction metadata to give the original fields
-            val finalPredictions = predictions.drop("indices").drop("values").drop("rawPrediction").drop("probability")
+            val finalPredictions = predictions.drop("indices")
+              .drop("values")
+              .drop("rawPrediction")
+              .drop("probability")
 
             // Inspect the output
             finalPredictions.printSchema()
@@ -152,9 +150,9 @@ object MakePrediction {
         finalPredictions.toJavaRDD })
         .map(pred=>
         PredictionResponse(
-        "NN",
-        pred.get(9).toString,
-        pred.get(16).toString
+          pred.get(15).toString,
+          pred.get(9).toString,
+          pred.get(17).toString
         ))
       // Convert the output to an OrionSinkObject and send to Context Broker
         val sinkDataStream = predictionDataStream
