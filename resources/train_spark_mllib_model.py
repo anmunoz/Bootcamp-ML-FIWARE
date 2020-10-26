@@ -21,7 +21,12 @@ def main(base_path):
      #sc and spark
     #except (NameError, UnboundLocalError) as e:
   import findspark
-  findspark.init()
+  print(os.environ['SPARK_HOME'])
+  print('SPARK_HOME')
+  print(os.environ['JAVA_HOME'])
+  print('JAVA_HOME')
+  
+  findspark.init(os.environ['SPARK_HOME'])
   import pyspark
   import pyspark.sql
   
@@ -55,11 +60,13 @@ def main(base_path):
     StructField("Origin", StringType(), True),      # "Origin":"TUS"
   ])
   
-  input_path = "{}/data/simple_flight_delay_features.jsonl.bz2".format(
+  input_path = "{}/resources/data/simple_flight_delay_features.jsonl.bz2".format(
     base_path
   )
+  print(os.getcwd())
   features = spark.read.json(input_path, schema=schema)
   features.first()
+  print(os.getcwd())
   
   #
   # Check for nulls in features before using Spark ML
@@ -96,7 +103,7 @@ def main(base_path):
   )
   
   # Save the bucketizer
-  arrival_bucketizer_path = "{}/models/arrival_bucketizer_2.0.bin".format(base_path)
+  arrival_bucketizer_path = "{}/resources/models/arrival_bucketizer_2.0.bin".format(base_path)
   arrival_bucketizer.write().overwrite().save(arrival_bucketizer_path)
   
   # Apply the bucketizer
@@ -122,7 +129,7 @@ def main(base_path):
     ml_bucketized_features = ml_bucketized_features.drop(column)
     
     # Save the pipeline model
-    string_indexer_output_path = "{}/models/string_indexer_model_{}.bin".format(
+    string_indexer_output_path = "{}/resources/models/string_indexer_model_{}.bin".format(
       base_path,
       column
     )
@@ -143,7 +150,7 @@ def main(base_path):
   final_vectorized_features = vector_assembler.transform(ml_bucketized_features)
   
   # Save the numeric vector assembler
-  vector_assembler_path = "{}/models/numeric_vector_assembler.bin".format(base_path)
+  vector_assembler_path = "{}/resources/models/numeric_vector_assembler.bin".format(base_path)
   vector_assembler.write().overwrite().save(vector_assembler_path)
   
   # Drop the index columns
@@ -165,7 +172,7 @@ def main(base_path):
   model = rfc.fit(final_vectorized_features)
   
   # Save the new model over the old one
-  model_output_path = "{}/models/spark_random_forest_classifier.flight_delays.5.0.bin".format(
+  model_output_path = "{}/resources/models/spark_random_forest_classifier.flight_delays.5.0.bin".format(
     base_path
   )
   model.write().overwrite().save(model_output_path)
