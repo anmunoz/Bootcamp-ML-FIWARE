@@ -1,71 +1,62 @@
 version: "3.5"
 services:
-   # mongo-orion:
-   #  container_name: mongo-orion
-   #  image: mongo:3.6
-   #  command: --nojournal
+   mongo-orion:
+    container_name: mongo-orion
+    image: mongo:3.6
+    command: --nojournal
 
-   # orion:
-   #  image: fiware/orion
-   #  links:
-   #    - mongo-orion
-   #  ports:
-   #    - "1027:1026"
-   #  command: -dbhost mongo-orion
+   orion:
+    image: fiware/orion
+    links:
+      - mongo-orion
+    ports:
+      - "1027:1026"
+    command: -dbhost mongo-orion
 
-   # web:
-   #   image: python:3
-   #   container_name: web
-   #   environment:
-   #     - PROJECT_HOME=./
-   #   command: bash -c "pip install --no-cache-dir -r ./resources/requirements.txt && sh ./resources/entities/createEntities.sh && sh ./resources/entities/createSubscriptions.sh && python3 ./resources/web/predict_flask.py"
-   #   ports:
-   #    - "5000:5000"
-   #   volumes:
-   #     - ./resources:/resources
-
-   # spark-master:
-   #   image: bde2020/spark-master:3.0.0-hadoop3.2
-   #   container_name: spark-master
-   #   ports:
-   #     - "8080:8080"
-   #     - "7077:7077"
-   #     - "9001:9001"
-   #   depends_on:
-   #     - sbt
-   #   environment:
-   #     - INIT_DAEMON_STEP=setup_spark
-   #     - "constraint:node==spark-master"
-   #   command: bash -c "sleep 120 && sh /flight_prediction/flight_prediction/run-spark-jobs.sh"
-   #   volumes:
-   #     - ./:/flight_prediction
-
-   # spark-worker-1:
-   #   image: bde2020/spark-worker:3.0.0-hadoop3.2
-   #   container_name: spark-worker-1
-   #   depends_on:
-   #     - spark-master
-   #   ports:
-   #     - "8081:8081"
-   #   environment:
-   #     - "SPARK_MASTER=spark://spark-master:7077"
-   #     - "constraint:node==spark-master"
-
-   # sbt:
-   #  image: mozilla/sbt
-   #  container_name: sbt
-   #  volumes:
-   #    - ./flight_prediction:/app
-   #  working_dir: /app
-   #  command: sbt package
-  web:
+   web:
      image: python:3
      container_name: web
      environment:
-       - SPARK_HOME=./
-     command: bash -c "pip install --no-cache-dir -r ./resources/requirements.txt && python3 ./resources/train_spark_mllib_model.py ."
+       - PROJECT_HOME=./
+     command: bash -c "pip install --no-cache-dir -r ./resources/requirements.txt && sh ./resources/entities/createEntities.sh && sh ./resources/entities/createSubscriptions.sh && python3 ./resources/web/predict_flask.py"
      ports:
       - "5000:5000"
      volumes:
        - ./resources:/resources
+
+   spark-master:
+     image: bde2020/spark-master:3.0.0-hadoop3.2
+     container_name: spark-master
+     ports:
+       - "8080:8080"
+       - "7077:7077"
+       - "9001:9001"
+     depends_on:
+       - sbt
+     environment:
+       - INIT_DAEMON_STEP=setup_spark
+       - "constraint:node==spark-master"
+     command: bash -c "sleep 120 && sh /flight_prediction/flight_prediction/run-spark-jobs.sh"
+     volumes:
+       - ./:/flight_prediction
+
+   spark-worker-1:
+     image: bde2020/spark-worker:3.0.0-hadoop3.2
+     container_name: spark-worker-1
+     depends_on:
+       - spark-master
+     ports:
+       - "8081:8081"
+     environment:
+       - "SPARK_MASTER=spark://spark-master:7077"
+       - "constraint:node==spark-master"
+
+   sbt:
+    image: mozilla/sbt
+    container_name: sbt
+    volumes:
+      - ./flight_prediction:/app
+    working_dir: /app
+    command: sbt package
+
   
