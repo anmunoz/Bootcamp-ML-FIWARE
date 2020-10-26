@@ -10,10 +10,10 @@ import org.apache.spark.streaming.{Seconds, StreamingContext}
 import org.fiware.cosmos.orion.spark.connector.{ContentType, HTTPMethod, OrionReceiver, OrionSink, OrionSinkObject}
 
 object MakePrediction {
-  final val URL_CB = "http://localhost:1027/v2/entities/ResFlightPrediction1/attrs"
+  final val URL_CB = "http://orion:1026/v2/entities/ResFlightPrediction1/attrs"
   final val CONTENT_TYPE = ContentType.JSON
   final val METHOD = HTTPMethod.PATCH
-  final val BASE_PATH = "./prediction-job"
+  final val BASE_PATH = "./flight_prediction"
 
   def main(args: Array[String]): Unit = {
     println("Fligth predictor starting...")
@@ -26,7 +26,7 @@ object MakePrediction {
     import spark.implicits._
 
     //Load the arrival delay bucketizer
-    val base_path= "/Users/admin/Documents/practica_big_data_2019"
+    val base_path= BASE_PATH
     val arrivalBucketizerPath = "%s/models/arrival_bucketizer_2.0.bin".format(base_path)
     print(arrivalBucketizerPath.toString())
     val arrivalBucketizer = Bucketizer.load(arrivalBucketizerPath)
