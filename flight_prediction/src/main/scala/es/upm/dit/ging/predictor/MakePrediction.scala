@@ -54,6 +54,7 @@ object MakePrediction {
       .flatMap(event => event.entities)
       .map(ent => {println(ent)
         val origin = ent.attrs("Origin").value.toString
+        println(origin+"kkkkkkkkkkkkkkkkkkk")
         val flightNumber = ent.attrs("FlightNum").value.toString
         val dayOfWeek = ent.attrs("DayOfWeek").value.toString.toInt
         val dayOfYear = ent.attrs("DayOfYear").value.toString.toInt
@@ -63,7 +64,7 @@ object MakePrediction {
         val timestamp = Timestamp.valueOf(ent.attrs("Timestamp").value.toString)
         val flightDate =   Date.valueOf(ent.attrs("FlightDate").value.toString)
         val carrier = ent.attrs("Carrier").value.toString
-        val uuid = ent.attrs("UUID").value.toString
+        val uuid = ent.attrs("predictionId").value.toString
         val distance = ent.attrs("Distance").value.toString.toDouble
         val socketId = ent.attrs("socketId").value.toString
 

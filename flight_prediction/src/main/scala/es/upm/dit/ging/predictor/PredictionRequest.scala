@@ -19,5 +19,6 @@ case class PredictionRequest(origin: String,
                              carrierIndex: Double,
                              originIndex: Double,
                              destIndex: Double,
-                             routeIndex: Double
+                             routeIndex: Double,
+                             socketId: String
                             )
