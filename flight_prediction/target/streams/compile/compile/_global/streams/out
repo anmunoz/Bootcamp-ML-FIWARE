@@ -1,7 +1,0 @@
-[0m[[0m[31merror[0m] [0m[0m/Users/admin/Documents/Bootcamp-ML-FIWARE/flight_prediction/src/main/scala/es/upm/dit/ging/predictor/MakePrediction.scala:72:31: 18 arguments but expected 17 for method apply: (origin: String, flightNumber: String, dayOfWeek: Int, dayOfYear: Int, dayOfMonth: Int, dest: String, depDelay: Double, prediction: String, timestamp: java.sql.Timestamp, flightDate: java.sql.Date, carrier: String, uuid: String, distance: Double, carrierIndex: Double, originIndex: Double, destIndex: Double, routeIndex: Double)es.upm.dit.ging.predictor.PredictionRequest in object PredictionRequest[0m
-[0m[[0m[31merror[0m] [0m[0m        uuid,distance,0,0,0,0,socketId)[0m
-[0m[[0m[31merror[0m] [0m[0m                              ^[0m
-[0m[[0m[31merror[0m] [0m[0m/Users/admin/Documents/Bootcamp-ML-FIWARE/flight_prediction/src/main/scala/es/upm/dit/ging/predictor/MakePrediction.scala:77:24: value toDF is not a member of org.apache.spark.rdd.RDD[Nothing][0m
-[0m[[0m[31merror[0m] [0m[0m          val df = rdd.toDF("Origin","FlightNum","DayOfWeek","DayOfYear"[0m
-[0m[[0m[31merror[0m] [0m[0m                       ^[0m
-[0m[[0m[31merror[0m] [0m[0mtwo errors found[0m
