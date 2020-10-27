@@ -18,10 +18,8 @@ cd Bootcamp-ML-FIWARE
 python3 deploy-scenario.py
 ```
 
-* Open browser in :
-``` 
-http://localhost:5000/flights/delays/predict_flights
-```
+* Open browser in http://localhost:5000/flights/delays/predict_flights
+
 * Fill the form 
 
 Enter a nonzero departure delay, an ISO-formatted date (I used 2016-12-25, which was in the future at the time I was writing this), a valid carrier code (use AA or DL if you don’t know one), an origin and destination (my favorite is ATL → SFO)
