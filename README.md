@@ -9,8 +9,8 @@
 
 * Clone this project
 ```shell
-git clone https://github.com/ging/Bootcamp-ML-FIWARE
-cd Bootcamp-ML-FIWARE
+git clone https://github.com/ging/fiware-ml-flights
+cd fiware-ml-flights
 ```
 
 * Run the whole scenario
