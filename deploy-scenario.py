@@ -14,7 +14,12 @@ if not CHECK_DATA:
 
 if not CHECK_FOLDER:
     print('Start training containers')
-    os.system('docker-compose -f docker-compose-training.yml up')
+    os.system('docker-compose -f docker-compose-training.yml up -d')
+
+while not CHECK_FOLDER:
+    time.sleep(30)
+    print('Still training...')
+
 if CHECK_FOLDER:
     os.system('docker-compose -f docker-compose-training.yml down')
     time.sleep(3)
