@@ -15,7 +15,7 @@ if not CHECK_DATA:
 if not CHECK_FOLDER:
     print('Start training containers')
     os.system('docker-compose -f docker-compose-training.yml up')
-else:
+if CHECK_FOLDER:
     os.system('docker-compose -f docker-compose-training.yml down')
     time.sleep(3)
     print('Start prediction containers')
