@@ -1,1 +1,0 @@
-wget https://downloads.apache.org/spark/spark-3.0.1/spark-3.0.1-bin-hadoop2.7.tgz && pwd && tar -xvf spark-3.0.1-bin-hadoop2.7.tgz
