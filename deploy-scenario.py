@@ -11,6 +11,9 @@ CHECK_FOLDER = os.path.isdir(MYDIR)
 if not CHECK_DATA:
 	print('Downloading the data...')
 	os.system('./resources/download_data.sh')
+if not CHECK_FOLDER:
+    print('Start training containers')
+    os.system('docker-compose -f docker-compose-training.yml up')
 
 while not os.path.isdir(MYDIR):
 	print('Still training...')
@@ -21,6 +24,7 @@ if CHECK_FOLDER:
     time.sleep(3)
     print('Start prediction containers')
     os.system('docker-compose -f docker-compose-prediction.yml up')
+
 
 
 
