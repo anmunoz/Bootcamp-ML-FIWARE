@@ -67,7 +67,7 @@
       timeout: 10s
       retries: 3
       start_period: 140s
-     command: bash -c "sleep 300 && python3 /resources/entities/runDraco.py"
+     command: bash -c "sleep 10 && python3 /resources/entities/runDraco.py"
      volumes:
        - ./resources:/resources
 
