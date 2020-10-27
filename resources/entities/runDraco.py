@@ -60,9 +60,38 @@ class RunDraco():
                 "state": "RUNNING"
             }
             r = requests.put(url = DRACO_ENDPOINT, json=data ,headers=headers) 
+            response = r.status_code
+            print("Response:%s "%response)
+            
+    def update_mongo_procesor(self,draco_endpoint,list_processors):
+        print("Update NGSIToMongo Processor")
+        headers = {'content-type': 'application/json'}
+        for processor in list_processors:
+            DRACO_ENDPOINT = "http://" + draco_endpoint + "/nifi-api/processors/"+processor
+            
+            r = requests.get(url = DRACO_ENDPOINT,headers=headers) 
             response = json.loads(r.text)
             print("Response:%s "%response)
+            if response["component"]["name"] == "NGSIToMongo":
+                data = {
+                   "revision":{
+                      "clientId":"8bb725ef-0158-1000-478b-da5903184809",
+                      "version":response["revision"]["version"]
+                   },
+                   "component":{
+                      "id":response["component"]["id"],
+                      "config":{
+                         "properties":{
+                            "Mongo URI":"mongodb://mongo-orion:27017"
+                         }
+                      }
+                   }
+                }   
+                r = requests.put(url = DRACO_ENDPOINT, json=data, headers=headers)
+                response_up = json.loads(r.text)
+                print("Response:%s "%response_up)
 
+            
 if __name__ == "__main__":
     
     from sys import argv
@@ -75,4 +104,5 @@ if __name__ == "__main__":
     group_id=template_info[0]
     init.put_template(draco_endpoint,group_id,template_info[1])
     processors_id=init.get_processors_id(draco_endpoint,group_id)
+    init.update_mongo_procesor(draco_endpoint,processors_id )
     init.run_processors(draco_endpoint,processors_id ) 
