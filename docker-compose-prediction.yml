@@ -33,11 +33,54 @@
        - PROJECT_HOME=./
      depends_on: 
       - orion
-     command: bash -c "sleep 10 && sh /resources/entities/createEntities.sh && sh /resources/entities/createSubscriptions.sh && python3 /resources/web/predict_flask.py"
+     command: bash -c "sleep 10 && python3 /resources/web/predict_flask.py"
      ports:
       - "5000:5000"
      volumes:
        - ./resources:/resources
+
+   script:
+     image: ging/python-flask
+     container_name: script
+     depends_on: 
+      - orion
+     healthcheck:
+      test: ["CMD", "curl", "-f", "http://orion:1026"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+     command: bash -c "sh /resources/entities/createEntities.sh && sh /resources/entities/createSubscriptions.sh"
+     volumes:
+       - ./resources:/resources
+
+   script-draco:
+     image: ging/python-flask
+     container_name: script-draco
+     environment:
+      - DRACO_ENDPOINT=draco:9090
+     depends_on: 
+      - draco
+     healthcheck:
+      test: ["CMD", "curl", "-f", "http://draco:9090/nifi-api/system-diagnostics"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 140s
+     command: bash -c "sleep 300 && python3 /resources/entities/runDraco.py"
+     volumes:
+       - ./resources:/resources
+
+   draco:
+    image: ging/fiware-draco
+    container_name: draco
+    depends_on:
+      - orion
+    environment:
+      - NIFI_WEB_HTTP_PORT=9090
+    ports:
+      - "9090:9090"
+      - "5050:5050"
 
    spark-master:
      image: bde2020/spark-master:3.0.0-hadoop3.2
