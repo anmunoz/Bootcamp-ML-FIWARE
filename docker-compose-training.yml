@@ -1,0 +1,38 @@
+ version: "3.5"
+ services:
+   mongo-orion:
+    container_name: mongo-orion
+    image: mongo:3.6
+    command: --nojournal
+    ports:
+     - "27017:27017"
+
+   mongo-data:
+    container_name: mongo-data
+    image: mongo:3.6
+    command: bash -c "sh /tmp/resources/import_distances.sh"
+    depends_on: 
+      - mongo-orion
+    volumes:
+      - ./:/tmp
+
+   sbt:
+    image: mozilla/sbt
+    container_name: sbt
+    working_dir: /app
+    command: sbt package
+    volumes:
+       - ./flight_prediction:/app
+  
+   train:
+    image: ging/python-java-spark
+    container_name: train
+    depends_on: 
+      - mongo-data
+    environment:
+      - SPARK_HOME=./spark-3.0.1-bin-hadoop2.7
+      - JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+    command: bash -c "python3 /resources/resources/train_spark_mllib_model.py ."
+    volumes:
+      - ./:/resources
+  
