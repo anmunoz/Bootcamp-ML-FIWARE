@@ -33,7 +33,7 @@
        - PROJECT_HOME=./
      depends_on: 
       - orion
-     command: bash -c "sh /resources/entities/createEntities.sh && sh /resources/entities/createSubscriptions.sh && python3 /resources/web/predict_flask.py"
+     command: bash -c "sleep 10 && sh /resources/entities/createEntities.sh && sh /resources/entities/createSubscriptions.sh && python3 /resources/web/predict_flask.py"
      ports:
       - "5000:5000"
      volumes:

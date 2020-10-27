@@ -1,0 +1,5 @@
+models/*
+data/*
+flight_prediction/project/target/*
+flight_prediction/target/*
+resources/web/__pycache__/*
